@@ -29,7 +29,7 @@ jobs:
         run: mvn sonar:sonar
              -Dsonar.projectKey=kotlin-micronaut
              -Dsonar.host.url=http://ec2-34-227-47-177.compute-1.amazonaws.com:9000
-             -Dsonar.login=-Dsonar.login=${{ secrets.SONAR_TOKEN }}
+             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         working-directory: ./
       - name: Horusec Security
         run: |
