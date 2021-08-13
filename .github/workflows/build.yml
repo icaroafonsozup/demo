@@ -15,23 +15,26 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-          ${{ runner.os }}-m2
+       - uses: actions/cache@v1
+         with:
+           path: ~/.m2/repository
+           key: ${{ runner.os }}-maven-${{ hashFiles('./moove/pom.xml') }}
+           restore-keys: |
+             ${{ runner.os }}-maven-
       - name: Build
         run: mvn -B clean install
+        working-directory: ./
       - name: Lint
         run: mvn antrun:run@ktlint
+        working-directory: ./
       - name: Sonar
         run: mvn sonar:sonar \
              -Dsonar.projectKey=kotlin-micronaut \
              -Dsonar.host.url=http://ec2-34-227-47-177.compute-1.amazonaws.com:9000 \
              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        working-directory: ./
       - name: Horusec Security
         run: |
             curl -fsSL https://horusec-cli.s3.amazonaws.com/install.sh | bash
             horusec start -p ./
+        working-directory: ./
