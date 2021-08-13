@@ -27,9 +27,9 @@ jobs:
         working-directory: ./
       - name: Sonar
         run: mvn sonar:sonar
-               -Dsonar.projectKey=icaro-demo-2
-               -Dsonar.host.url=http://ec2-34-227-47-177.compute-1.amazonaws.com:9000
-               -Dsonar.login=-Dsonar.login=${{ secrets.SONAR_TOKEN }}
+             -Dsonar.projectKey=icaro-demo-2
+             -Dsonar.host.url=http://ec2-34-227-47-177.compute-1.amazonaws.com:9000
+             -Dsonar.login=-Dsonar.login=${{ secrets.SONAR_TOKEN }}
         working-directory: ./
       - name: Horusec Security
         run: |
