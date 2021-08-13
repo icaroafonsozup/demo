@@ -26,6 +26,10 @@ jobs:
       - name: Lint
          run: mvn antrun:run@ktlint
       - name: Sonar    
+         run: mvn sonar:sonar \
+              -Dsonar.projectKey=kotlin-micronaut \
+              -Dsonar.host.url=http://ec2-34-227-47-177.compute-1.amazonaws.com:9000 \
+              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
       - name: Horusec Security
           run: |
             curl -fsSL https://horusec-cli.s3.amazonaws.com/install.sh | bash
