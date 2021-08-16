@@ -6,24 +6,32 @@ on:
   pull_request:
 
 jobs:
-  authenticate:
+  aws-login:
     runs-on: self-hosted
     outputs:
-      ecr_pwd: ${{ steps.authenticate.outputs.ecr_pwd }}
+      ecr_pwd: ${{ steps.ecrpassword.outputs.ecr_pwd }}
+      kube_config: ${{ steps.kubeconfig.outputs.kube_config }}
     steps:
-      - id: authenticate
+      - id: ecrpassword
         run: |
           ECR_PWD=`aws ecr get-login-password --region us-east-1` 
           echo "::set-output name=ecr_pwd::$ECR_PWD"
+      - name: Generate kube_config
+        run: aws eks --region us-east-1 update-kubeconfig --name orange-pipes-sandbox --role-arn arn:aws:iam::475383224204:role/TesteEliasGithubRunner
+      - id: kubeconfig
+        name: "Generate kubeconfig"
+        run: |
+          KUBE_CONFIG=`cat $HOME/.kube/config | base64 -w 0`
+          echo "::set-output name=kube_config::$KUBE_CONFIG"
 
   build:
     runs-on: self-hosted
-    needs: authenticate
+    needs: aws-login
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-java11-maven:latest
       credentials:
         username: AWS
-        password: ${{ needs.authenticate.outputs.ecr_pwd }}
+        password: ${{ needs.aws-login.outputs.ecr_pwd }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v1
@@ -45,12 +53,12 @@ jobs:
 
   quality:
     runs-on: self-hosted
-    needs: [authenticate,build]
+    needs: [aws-login,build]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-java11-maven:latest
       credentials:
         username: AWS
-        password: ${{ needs.authenticate.outputs.ecr_pwd }}
+        password: ${{ needs.aws-login.outputs.ecr_pwd }}
     steps:
       - name: Sonar
         run: mvn sonar:sonar
@@ -71,12 +79,12 @@ jobs:
 
   docker_build:
     runs-on: self-hosted
-    needs: [authenticate,quality,security]
+    needs: [aws-login,quality,security]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
         username: AWS
-        password: ${{ needs.authenticate.outputs.ecr_pwd }}
+        password: ${{ needs.aws-login.outputs.ecr_pwd }}
     steps:
       - uses: actions/cache@v1
         with:
@@ -87,14 +95,33 @@ jobs:
 
   docker_push:
     runs-on: self-hosted
-    needs: [authenticate,docker_build]
+    needs: [aws-login,docker_build]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
         username: AWS
-        password: ${{ needs.authenticate.outputs.ecr_pwd }}
+        password: ${{ needs.aws-login.outputs.ecr_pwd }}
     steps:
       - name: Login docker
-        run: docker login --username AWS --password ${{ needs.authenticate.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
+        run: docker login --username AWS --password ${{ needs.aws-login.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
       - name: Publish docker image
         run: docker push 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
+
+  deploy-eks:
+    name: 'Deploy to EKS'
+    runs-on: self-hosted
+    needs: [build-image, aws-login]
+    container:
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-deploy-eks:latest
+      credentials:
+        username: AWS
+        password: ${{ needs.aws-login.outputs.ecr_password }}
+      env:
+        KUBE_CONFIG: ${{ needs.aws-login.outputs.kube_config }}
+        APP_NAME: micronaut-demo
+        APP_IMAGE: micronaut-demo:latest
+    steps:
+      - name: Add sandbox k8s cluster to hosts
+        run: echo "54.87.1.134 DDED8C1BC51F2D4FC42588C3425440F1.gr7.us-east-1.eks.amazonaws.com" >> /etc/hosts
+      - name: Kubectl deploy
+        run: sh /orange-init.sh
