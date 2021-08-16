@@ -8,13 +8,13 @@ on:
 jobs:
   authenticate:
     runs-on: self-hosted
-      outputs:
-        ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
-      steps:
-        - id: step1
-          run: |
-            ECR_PWD=`aws ecr get-login-password --region us-east-1`
-            echo "::set-output name=ecr_pwd::$ECR_PWD"
+    outputs:
+      ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
+    steps:
+      - id: step1
+        run: |
+          ECR_PWD=`aws ecr get-login-password --region us-east-1` 
+          echo "::set-output name=ecr_pwd::$ECR_PWD"
 
   build:
     runs-on: self-hosted
