@@ -67,7 +67,7 @@ jobs:
 
   docker_build:
     runs-on: self-hosted
-    needs: build
+    needs: [quality,security]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
