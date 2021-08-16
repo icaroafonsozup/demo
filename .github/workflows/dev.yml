@@ -6,16 +6,6 @@ on:
   pull_request:
 
 jobs:
-  authenticate:
-    runs-on: self-hosted
-    outputs:
-      ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
-    steps:
-      - id: step1
-        run: |
-          ECR_PWD=`aws ecr get-login-password --region us-east-1` 
-          echo "::set-output name=ecr_pwd::$ECR_PWD"
-
   build:
     runs-on: self-hosted
     needs: authenticate
@@ -40,7 +30,7 @@ jobs:
       - uses: actions/cache@v1
         with:
           path: ~/target/demo-*.jar
-          key: $GITHUB_SHA-dev-jar
+          key: ${{ github.sha }}-dev-jar
 
   quality:
     runs-on: self-hosted
@@ -65,9 +55,20 @@ jobs:
           horusec start -p ./
         working-directory: ./
 
+  authenticate:
+    runs-on: self-hosted
+    needs: [quality,security]
+    outputs:
+      ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
+    steps:
+      - id: step1
+        run: |
+          ECR_PWD=`aws ecr get-login-password --region us-east-1` 
+          echo "::set-output name=ecr_pwd::$ECR_PWD"
+
   docker_build:
     runs-on: self-hosted
-    needs: [authenticate,quality,security]
+    needs: [authenticate]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
@@ -77,7 +78,7 @@ jobs:
       - uses: actions/cache@v1
         with:
           path: ~/target/demo-*.jar
-          key: $GITHUB_SHA-dev-jar
+          key: ${{ github.sha }}-dev-jar
       - name: Publish docker image
         run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
 
