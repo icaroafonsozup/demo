@@ -4,6 +4,7 @@ on:
     branches:
       - dev
   pull_request:
+
 jobs:
   authenticate:
     runs-on: self-hosted
@@ -17,6 +18,7 @@ jobs:
 
   build:
     runs-on: self-hosted
+    needs: authenticate
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.11
@@ -35,17 +37,60 @@ jobs:
       - name: Lint
         run: mvn antrun:run@ktlint
         working-directory: ./
+      - uses: actions/cache@v1
+        with:
+          path: ~/target/demo-*.jar
+          key: $GITHUB_SHA-dev-jar
 
   quality:
-    - steps:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
       - name: Sonar
         run: mvn sonar:sonar
           -Dsonar.projectKey=kotlin-micronaut
           -Dsonar.host.url=http://ec2-54-163-196-183.compute-1.amazonaws.com:9000
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         working-directory: ./
+  
+  security:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
       - name: Horusec Security
         run: |
           curl -fsSL https://horusec-cli.s3.amazonaws.com/install.sh | bash
           horusec start -p ./
         working-directory: ./
+
+  docker_build:
+    runs-on: self-hosted
+    needs: build
+    container:
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
+      credentials:
+        username: AWS
+        password: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+    steps:
+      - uses: actions/cache@v1
+        with:
+          path: ~/target/demo-*.jar
+          key: $GITHUB_SHA-dev-jar
+      - name: Publish docker image
+        run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
+
+  docker_push:
+    runs-on: self-hosted
+    needs: docker_build
+    container:
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
+      credentials:
+        username: AWS
+        password: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+    steps:
+      - name: Login docker
+        run: docker login --username AWS --password ${{ needs.get-aws-password.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
+      - name: Publish docker image
+        run: docker push 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
