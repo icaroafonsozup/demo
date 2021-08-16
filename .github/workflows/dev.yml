@@ -72,7 +72,7 @@ jobs:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
         username: AWS
-        password: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+        password: ${{ needs.authenticate.outputs.ecr_pwd }}
     steps:
       - uses: actions/cache@v1
         with:
@@ -88,9 +88,9 @@ jobs:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
         username: AWS
-        password: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+        password: ${{ needs.authenticate.outputs.ecr_pwd }}
     steps:
       - name: Login docker
-        run: docker login --username AWS --password ${{ needs.get-aws-password.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
+        run: docker login --username AWS --password ${{ needs.authenticate.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
       - name: Publish docker image
         run: docker push 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
