@@ -5,8 +5,18 @@ on:
       - dev
   pull_request:
 jobs:
+  authenticate:
+    runs-on: self-hosted
+      outputs:
+        ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
+      steps:
+        - id: step1
+          run: |
+            ECR_PWD=`aws ecr get-login-password --region us-east-1`
+            echo "::set-output name=ecr_pwd::$ECR_PWD"
+
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.11
@@ -25,6 +35,9 @@ jobs:
       - name: Lint
         run: mvn antrun:run@ktlint
         working-directory: ./
+
+  quality:
+    - steps:
       - name: Sonar
         run: mvn sonar:sonar
           -Dsonar.projectKey=kotlin-micronaut
