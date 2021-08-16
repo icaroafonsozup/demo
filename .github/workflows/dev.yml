@@ -6,8 +6,24 @@ on:
   pull_request:
 
 jobs:
+  authenticate:
+    runs-on: self-hosted
+    outputs:
+      ecr_pwd: ${{ steps.authenticate.outputs.ecr_pwd }}
+    steps:
+      - id: authenticate
+        run: |
+          ECR_PWD=`aws ecr get-login-password --region us-east-1` 
+          echo "::set-output name=ecr_pwd::$ECR_PWD"
+
   build:
     runs-on: self-hosted
+    needs: authenticate
+    container:
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-java11-maven:latest
+      credentials:
+        username: AWS
+        password: ${{ needs.authenticate.outputs.ecr_pwd }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v1
@@ -29,7 +45,12 @@ jobs:
 
   quality:
     runs-on: self-hosted
-    needs: build
+    needs: [authenticate,build]
+    container:
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-java11-maven:latest
+      credentials:
+        username: AWS
+        password: ${{ needs.authenticate.outputs.ecr_pwd }}
     steps:
       - name: Sonar
         run: mvn sonar:sonar
@@ -48,20 +69,9 @@ jobs:
           horusec start -p ./
         working-directory: ./
 
-  authenticate:
-    runs-on: self-hosted
-    needs: [quality,security]
-    outputs:
-      ecr_pwd: ${{ steps.step1.outputs.ecr_pwd }}
-    steps:
-      - id: step1
-        run: |
-          ECR_PWD=`aws ecr get-login-password --region us-east-1` 
-          echo "::set-output name=ecr_pwd::$ECR_PWD"
-
   docker_build:
     runs-on: self-hosted
-    needs: [authenticate]
+    needs: [authenticate,quality,security]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
@@ -72,7 +82,7 @@ jobs:
         with:
           path: target/demo-*.jar
           key: ${{ github.sha }}-dev-jar
-      - name: Publish docker image
+      - name: Build docker image
         run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
 
   docker_push:
