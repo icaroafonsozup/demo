@@ -77,7 +77,7 @@ jobs:
           horusec start -p ./
         working-directory: ./
 
-  docker_build:
+  docker-build:
     runs-on: self-hosted
     needs: [aws-login,quality,security]
     container:
@@ -93,9 +93,9 @@ jobs:
       - name: Build docker image
         run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
 
-  docker_push:
+  docker-push:
     runs-on: self-hosted
-    needs: [aws-login,docker_build]
+    needs: [aws-login,docker-build]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
@@ -110,7 +110,7 @@ jobs:
   deploy-eks:
     name: 'Deploy to EKS'
     runs-on: self-hosted
-    needs: [build-image, aws-login]
+    needs: [docker-push, aws-login]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-deploy-eks:latest
       credentials:
