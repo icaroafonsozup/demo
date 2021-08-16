@@ -108,14 +108,13 @@ jobs:
         run: docker push 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
 
   deploy-eks:
-    name: 'Deploy to EKS'
     runs-on: self-hosted
     needs: [docker-push, aws-login]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-deploy-eks:latest
       credentials:
         username: AWS
-        password: ${{ needs.aws-login.outputs.ecr_password }}
+        password: ${{ needs.aws-login.outputs.ecr_pwd }}
       env:
         KUBE_CONFIG: ${{ needs.aws-login.outputs.kube_config }}
         APP_NAME: micronaut-demo
