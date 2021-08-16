@@ -67,7 +67,7 @@ jobs:
 
   docker_build:
     runs-on: self-hosted
-    needs: [quality,security]
+    needs: [authenticate,quality,security]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
@@ -83,7 +83,7 @@ jobs:
 
   docker_push:
     runs-on: self-hosted
-    needs: docker_build
+    needs: [authenticate,docker_build]
     container:
       image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
       credentials:
