@@ -28,7 +28,7 @@ jobs:
         working-directory: ./
       - uses: actions/cache@v1
         with:
-          path: ~/target/demo-*.jar
+          path: target/demo-*.jar
           key: ${{ github.sha }}-dev-jar
 
   quality:
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/cache@v1
         with:
-          path: ~/target/demo-*.jar
+          path: target/demo-*.jar
           key: ${{ github.sha }}-dev-jar
       - name: Publish docker image
         run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
