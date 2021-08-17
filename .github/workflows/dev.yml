@@ -10,20 +10,11 @@ jobs:
     runs-on: self-hosted
     outputs:
       ecr_pwd: ${{ steps.ecrpassword.outputs.ecr_pwd }}
-      kube_config: ${{ steps.kubeconfig.outputs.kube_config }}
     steps:
       - id: ecrpassword
         run: |
           ECR_PWD=`aws ecr get-login-password --region us-east-1` 
           echo "::set-output name=ecr_pwd::$ECR_PWD"
-      - name: Generate kube_config
-        run: aws eks --region us-east-1 update-kubeconfig --name orange-pipes-sandbox --role-arn arn:aws:iam::475383224204:role/TesteEliasGithubRunner
-      - id: kubeconfig
-        name: "Generate kubeconfig"
-        run: |
-          KUBE_CONFIG=`cat $HOME/.kube/config | base64 -w 0`
-          echo "::set-output name=kube_config::$KUBE_CONFIG"
-
   build:
     runs-on: self-hosted
     needs: aws-login
@@ -116,9 +107,11 @@ jobs:
         username: AWS
         password: ${{ needs.aws-login.outputs.ecr_pwd }}
       env:
-        KUBE_CONFIG: ${{ needs.aws-login.outputs.kube_config }}
         APP_NAME: micronaut-demo
-        APP_IMAGE: micronaut-demo:latest
+        APP_IMAGE: 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
+        APP_PORT: 8080
+        AWS_REGION: us-east-1
+        CLUSTER_NAME: orange-pipes-sandbox
     steps:
       - name: Add sandbox k8s cluster to hosts
         run: echo "54.87.1.134 DDED8C1BC51F2D4FC42588C3425440F1.gr7.us-east-1.eks.amazonaws.com" >> /etc/hosts
