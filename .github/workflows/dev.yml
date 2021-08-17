@@ -107,11 +107,14 @@ jobs:
         username: AWS
         password: ${{ needs.aws-login.outputs.ecr_pwd }}
       env:
+        APP_NAMESPACE: micronaut-demo
         APP_NAME: micronaut-demo
         APP_IMAGE: 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
         APP_PORT: 8080
+        APP_TARGET_PORT: 8080
         AWS_REGION: us-east-1
         CLUSTER_NAME: orange-pipes-sandbox
+        COMMIT_SHA: ${{ github.sha }}
     steps:
       - name: Add sandbox k8s cluster to hosts
         run: echo "54.87.1.134 DDED8C1BC51F2D4FC42588C3425440F1.gr7.us-east-1.eks.amazonaws.com" >> /etc/hosts
