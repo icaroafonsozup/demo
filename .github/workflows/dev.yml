@@ -31,6 +31,9 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('./pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
+      - name: Test
+        run: mvn test
+        working-directory: ./
       - name: Build
         run: mvn -B clean install
         working-directory: ./
