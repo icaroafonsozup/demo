@@ -75,31 +75,40 @@ jobs:
     runs-on: self-hosted
     needs: [aws-login,quality,security]
     container:
-      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker-build:latest
       credentials:
         username: AWS
         password: ${{ needs.aws-login.outputs.ecr_pwd }}
+      env:
+        REGISTRY_URL: 475383224204.dkr.ecr.us-east-1.amazonaws.com
+        REPOSITORY_NAME: micronaut-demo
+        IMAGE_TAG: dev
+        DOCKERFILE_PATH: .
     steps:
       - uses: actions/cache@v1
         with:
           path: target/demo-*.jar
           key: ${{ github.sha }}-dev-jar
       - name: Build docker image
-        run: docker build . -t 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
+        run: sh /orange-init.sh
 
   docker-push:
     runs-on: self-hosted
     needs: [aws-login,docker-build]
     container:
-      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker:latest
+      image: 475383224204.dkr.ecr.us-east-1.amazonaws.com/step-image-docker-push:latest
       credentials:
         username: AWS
         password: ${{ needs.aws-login.outputs.ecr_pwd }}
+      env:
+        REGISTRY_URL: 475383224204.dkr.ecr.us-east-1.amazonaws.com
+        REGISTRY_USERNAME: AWS
+        REGISTRY_PASSWORD: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+        REPOSITORY_NAME: micronaut-demo
+        IMAGE_TAG: dev
     steps:
-      - name: Login docker
-        run: docker login --username AWS --password ${{ needs.aws-login.outputs.ecr_pwd }} 475383224204.dkr.ecr.us-east-1.amazonaws.com
       - name: Publish docker image
-        run: docker push 475383224204.dkr.ecr.us-east-1.amazonaws.com/micronaut-demo:dev
+        run: sh /orange-init.sh
 
   deploy-eks:
     runs-on: self-hosted
