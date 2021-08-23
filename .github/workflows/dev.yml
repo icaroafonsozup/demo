@@ -103,7 +103,7 @@ jobs:
       env:
         REGISTRY_URL: 475383224204.dkr.ecr.us-east-1.amazonaws.com
         REGISTRY_USERNAME: AWS
-        REGISTRY_PASSWORD: ${{ needs.get-aws-password.outputs.ecr_pwd }}
+        REGISTRY_PASSWORD: ${{ needs.aws-login.outputs.ecr_pwd }}
         REPOSITORY_NAME: micronaut-demo
         IMAGE_TAG: dev
     steps:
